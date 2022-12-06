@@ -1,7 +1,7 @@
 use std::collections::{HashSet, VecDeque};
 
 fn subroutine<const L: usize>(input: &str) -> Option<usize> {
-    // find the index of the first time 4 different characters appear after each other
+    // find the index of the first time `L` different characters appear after each other
     let mut sequence = VecDeque::from(vec![' '; L]);
     for (i, c) in input.chars().enumerate() {
         assert_eq!(sequence.len(), L);
