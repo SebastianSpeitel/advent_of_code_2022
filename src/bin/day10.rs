@@ -1,4 +1,8 @@
-use std::{collections::VecDeque, str::FromStr};
+use std::{
+    collections::VecDeque,
+    fmt::{Display, Write},
+    str::FromStr,
+};
 
 enum Instruction {
     Noop,
@@ -31,7 +35,6 @@ struct CPU {
     queue: VecDeque<Operation>,
     instruction_index: usize,
     register: i32,
-    wait: usize,
 }
 
 impl FromStr for CPU {
@@ -47,7 +50,6 @@ impl FromStr for CPU {
             queue: Default::default(),
             instruction_index: 0,
             register: 1,
-            wait: 0,
         })
     }
 }
@@ -89,6 +91,39 @@ impl Iterator for CPU {
     }
 }
 
+struct Canvas<const W: usize, const H: usize>(Vec<bool>);
+
+impl<const W: usize, const H: usize> Canvas<W, H> {
+    fn new() -> Self {
+        Self(vec![false; W * H])
+    }
+
+    fn draw(&mut self, X: i32, cycle: usize) {
+        let x = cycle % W;
+        let y = cycle / W;
+        let lit = ((X - 1)..=(X + 1)).contains(&(x as i32));
+
+        self.0[x + y * W] = lit;
+    }
+}
+
+impl<const W: usize, const H: usize> Display for Canvas<W, H> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for row in self.0.chunks_exact(W) {
+            for px in row {
+                if *px {
+                    f.write_char('#')?;
+                } else {
+                    f.write_char(' ')?;
+                }
+            }
+            f.write_char('\n')?;
+        }
+
+        Ok(())
+    }
+}
+
 fn part1(input: &str) -> String {
     let cpu: CPU = input.parse().unwrap();
     let mut res = 0;
@@ -107,7 +142,16 @@ fn part1(input: &str) -> String {
 }
 
 fn part2(input: &str) -> String {
-    todo!()
+    let cpu: CPU = input.parse().unwrap();
+    let mut canvas = Canvas::<40, 6>::new();
+    for (cycle, reg) in cpu.enumerate() {
+        dbg!(cycle, reg);
+        canvas.draw(reg, cycle);
+    }
+
+    println!("{canvas}");
+
+    "read for yourself /\\".to_string()
 }
 
 fn main() {
