@@ -1,53 +1,76 @@
 use std::{
     collections::{HashSet, VecDeque},
+    ops::{AddAssign, DivAssign, MulAssign, Rem},
     str::FromStr,
 };
 
 #[derive(Debug)]
-enum Operation {
-    Mul(u64),
-    Add(u64),
+enum Operation<I> {
+    Mul(I),
+    Add(I),
     Square,
 }
 
 #[derive(Debug)]
-struct Monkey {
+struct Monkey<I> {
     id: usize,
-    items: VecDeque<u64>,
-    operation: Operation,
-    test_value: u64,
+    items: VecDeque<I>,
+    operation: Operation<I>,
+    test_value: I,
     test_true: usize,
     test_false: usize,
     inspected_items: usize,
 }
 
-type ThrownItem = (usize, u64);
+type ThrownItem<I> = (usize, I);
 
-impl Monkey {
-    fn inspect(&self, mut item: u64) -> ThrownItem {
-        match self.operation {
+impl<I> Monkey<I> {
+    fn inspect<const D: u64>(&self, mut item: I) -> ThrownItem<I>
+    where
+        I: Clone,
+        I: for<'a> AddAssign<&'a I>,
+        I: for<'a> MulAssign<&'a I>,
+        I: Rem,
+        I: Default,
+        <I as Rem>::Output: PartialEq<I>,
+        I: DivAssign<u64>,
+    {
+        match &self.operation {
             Operation::Mul(x) => item *= x,
             Operation::Add(x) => item += x,
-            Operation::Square => item *= item,
+            Operation::Square => item *= &item.clone(),
         }
-        item /= 3;
-        match item % self.test_value {
-            0 => (self.test_true, item),
-            _ => (self.test_false, item),
+        item /= D;
+        match item.clone() % self.test_value.clone() == I::default() {
+            true => (self.test_true, item.to_owned()),
+            false => (self.test_false, item.to_owned()),
         }
     }
 
-    fn inspect_all(&mut self) -> Vec<ThrownItem> {
+    fn inspect_all<const D: u64>(&mut self) -> Vec<ThrownItem<I>>
+    where
+        I: Clone,
+        I: for<'a> AddAssign<&'a I>,
+        I: for<'a> MulAssign<&'a I>,
+        I: Rem,
+        I: Default,
+        <I as Rem>::Output: PartialEq<I>,
+        I: DivAssign<u64>,
+    {
         let mut result = Vec::new();
         for item in self.items.drain(..).collect::<Vec<_>>() {
             self.inspected_items += 1;
-            result.push(self.inspect(item));
+            result.push(self.inspect::<D>(item));
         }
         result
     }
 }
 
-impl FromStr for Monkey {
+impl<I> FromStr for Monkey<I>
+where
+    I: FromStr,
+    <I as FromStr>::Err: std::fmt::Debug,
+{
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut lines = s.lines();
@@ -118,12 +141,12 @@ impl FromStr for Monkey {
 }
 
 fn part1(input: &str) -> String {
-    let mut monkeys: Vec<Monkey> = input.split("\n\n").map(|x| x.parse().unwrap()).collect();
+    let mut monkeys: Vec<Monkey<u64>> = input.split("\n\n").map(|x| x.parse().unwrap()).collect();
     dbg!(&monkeys);
     let rounds = 20;
     for _ in 0..rounds {
         for i in 0..monkeys.len() {
-            let throws = monkeys[i].inspect_all();
+            let throws = monkeys[i].inspect_all::<3>();
             dbg!(&throws);
             for (id, item) in throws {
                 monkeys[id].items.push_back(item);
