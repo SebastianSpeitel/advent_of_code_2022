@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashSet, VecDeque},
+    collections::VecDeque,
     ops::{AddAssign, DivAssign, MulAssign, Rem},
     str::FromStr,
 };
@@ -13,7 +13,7 @@ enum Operation<I> {
 
 #[derive(Debug)]
 struct Monkey<I> {
-    id: usize,
+    _id: usize,
     items: VecDeque<I>,
     operation: Operation<I>,
     test_value: I,
@@ -34,6 +34,7 @@ impl<I> Monkey<I> {
         I: Default,
         <I as Rem>::Output: PartialEq<I>,
         I: DivAssign<u64>,
+        I: std::ops::RemAssign<u64>,
     {
         match &self.operation {
             Operation::Mul(x) => item *= x,
@@ -41,6 +42,9 @@ impl<I> Monkey<I> {
             Operation::Square => item *= &item.clone(),
         }
         item /= D;
+
+        item %= 7 * 11 * 13 * 3 * 17 * 2 * 5 * 19;
+
         match item.clone() % self.test_value.clone() == I::default() {
             true => (self.test_true, item.to_owned()),
             false => (self.test_false, item.to_owned()),
@@ -56,6 +60,7 @@ impl<I> Monkey<I> {
         I: Default,
         <I as Rem>::Output: PartialEq<I>,
         I: DivAssign<u64>,
+        I: std::ops::RemAssign<u64>,
     {
         let mut result = Vec::new();
         for item in self.items.drain(..).collect::<Vec<_>>() {
@@ -96,7 +101,6 @@ where
             .split_ascii_whitespace()
             .skip(4)
             .collect();
-        dbg!(&op);
         let operation = match op[0] {
             "*" if op[1] == "old" => Operation::Square,
             "*" => Operation::Mul(op[1].parse().unwrap()),
@@ -129,7 +133,7 @@ where
             .unwrap();
 
         Ok(Self {
-            id,
+            _id: id,
             items,
             operation,
             test_value,
@@ -142,12 +146,12 @@ where
 
 fn part1(input: &str) -> String {
     let mut monkeys: Vec<Monkey<u64>> = input.split("\n\n").map(|x| x.parse().unwrap()).collect();
-    dbg!(&monkeys);
+    // dbg!(&monkeys);
     let rounds = 20;
     for _ in 0..rounds {
         for i in 0..monkeys.len() {
             let throws = monkeys[i].inspect_all::<3>();
-            dbg!(&throws);
+            // dbg!(&throws);
             for (id, item) in throws {
                 monkeys[id].items.push_back(item);
             }
@@ -156,13 +160,31 @@ fn part1(input: &str) -> String {
 
     monkeys.sort_by(|a, b| b.inspected_items.cmp(&a.inspected_items));
 
-    dbg!(&monkeys);
+    // dbg!(&monkeys);
 
     (monkeys[0].inspected_items * monkeys[1].inspected_items).to_string()
 }
 
 fn part2(input: &str) -> String {
-    todo!()
+    let mut monkeys: Vec<Monkey<u64>> = input.split("\n\n").map(|x| x.parse().unwrap()).collect();
+    // dbg!(&monkeys);
+    let rounds = 10000;
+    for _r in 0..rounds {
+        // dbg!(r);
+        for i in 0..monkeys.len() {
+            let throws = monkeys[i].inspect_all::<1>();
+            // dbg!(&throws);
+            for (id, item) in throws {
+                monkeys[id].items.push_back(item);
+            }
+        }
+    }
+
+    monkeys.sort_by(|a, b| b.inspected_items.cmp(&a.inspected_items));
+
+    // dbg!(&monkeys);
+
+    (monkeys[0].inspected_items * monkeys[1].inspected_items).to_string()
 }
 
 fn main() {
