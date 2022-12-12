@@ -85,7 +85,7 @@ impl Forest {
         graph
     }
 
-    fn route(&self, from: usize, to: usize) -> Option<(f32, Vec<usize>)> {
+    fn route(&self, from: usize, to: usize) -> Option<(usize, Vec<usize>)> {
         dbg!(from, to);
 
         // let from_edges: Vec<_> = self.graph.edges(from.into()).collect();
@@ -123,7 +123,7 @@ impl Forest {
 
             let route = path.into_iter().map(|n| n.index()).collect::<Vec<_>>();
 
-            return Some((dist, route));
+            return Some((dist as usize, route));
         }
 
         // let paths = dijkstra(&self.graph, from.into(), Some(to.into()), |_| 1);
@@ -131,6 +131,11 @@ impl Forest {
         // paths.get(&to.into()).unwrap().to_owned()
 
         None
+    }
+
+    fn route_len(&self, from: usize, to: usize) -> Option<usize> {
+        let (dist, _) = self.route(from, to)?;
+        Some(dist)
     }
 }
 
@@ -203,13 +208,33 @@ fn part1(input: &str) -> String {
 
     let start = forest.start();
     let end = forest.end();
-    let (dist, _) = forest.route(start, end).unwrap();
+    let dist = forest.route_len(start, end).unwrap();
 
     dist.to_string()
 }
 
 fn part2(input: &str) -> String {
-    todo!()
+    let forest = input.parse::<Forest>().unwrap();
+    println!("{}", forest);
+
+    // println!(
+    //     "{:?}",
+    //     Dot::with_config(
+    //         &forest.build_graph(),
+    //         &[Config::EdgeNoLabel, Config::NodeIndexLabel]
+    //     )
+    // );
+
+    let end = forest.end();
+
+    let min = (0..forest.trees.len())
+        .into_iter()
+        .filter(|i| forest[*i].h() == 0)
+        .flat_map(|i| forest.route_len(i, end))
+        .min()
+        .unwrap();
+
+    min.to_string()
 }
 
 fn main() {
