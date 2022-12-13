@@ -1,13 +1,13 @@
 use petgraph::{algo::astar, prelude::DiGraph};
 use std::{fmt::Display, ops::Index, str::FromStr};
 
-type Tree = char;
+type Column = char;
 
-trait TreeExt {
+trait ColumnExt {
     fn h(&self) -> i8;
 }
 
-impl TreeExt for Tree {
+impl ColumnExt for Column {
     fn h(&self) -> i8 {
         if *self == 'S' {
             return 0;
@@ -22,32 +22,32 @@ impl TreeExt for Tree {
 }
 
 #[derive(Debug, Clone)]
-struct Forest {
+struct Mountain {
     width: usize,
-    trees: Vec<Tree>,
+    columns: Vec<Column>,
 }
 
-impl Forest {
+impl Mountain {
     fn start(&self) -> usize {
-        self.trees.iter().position(|&c| c == 'S').unwrap()
+        self.columns.iter().position(|&c| c == 'S').unwrap()
     }
 
     fn end(&self) -> usize {
-        self.trees.iter().position(|&c| c == 'E').unwrap()
+        self.columns.iter().position(|&c| c == 'E').unwrap()
     }
 
-    fn build_graph(&self) -> DiGraph<Tree, i8, usize> {
+    fn build_graph(&self) -> DiGraph<Column, i8, usize> {
         let mut graph = DiGraph::default();
 
         let w = self.width;
-        let height = self.trees.len() / w;
+        let height = self.columns.len() / w;
 
-        for tree in self.trees.iter().cloned() {
+        for tree in self.columns.iter().cloned() {
             graph.add_node(tree);
         }
 
         dbg!(self.width, height);
-        for i in 0..self.trees.len() {
+        for i in 0..self.columns.len() {
             let idx = i.into();
             let tree = self[i];
             let (x, y) = i2c(i, w);
@@ -117,7 +117,7 @@ impl Forest {
         if let Some((dist, path)) = path {
             let mut map = self.clone();
             for node in &path {
-                map.trees[node.index()] = '.';
+                map.columns[node.index()] = '.';
             }
             println!("{map}");
 
@@ -139,25 +139,25 @@ impl Forest {
     }
 }
 
-impl Index<(u32, u32)> for Forest {
-    type Output = Tree;
+impl Index<(u32, u32)> for Mountain {
+    type Output = Column;
 
     fn index(&self, index: (u32, u32)) -> &Self::Output {
-        &self.trees[c2i(index.0, index.1, self.width)]
+        &self.columns[c2i(index.0, index.1, self.width)]
     }
 }
 
-impl Index<usize> for Forest {
-    type Output = Tree;
+impl Index<usize> for Mountain {
+    type Output = Column;
 
     fn index(&self, index: usize) -> &Self::Output {
-        &self.trees[index]
+        &self.columns[index]
     }
 }
 
-impl Display for Forest {
+impl Display for Mountain {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (i, tree) in self.trees.iter().enumerate() {
+        for (i, tree) in self.columns.iter().enumerate() {
             write!(f, "{}", tree)?;
             if i % self.width == self.width - 1 {
                 writeln!(f)?;
@@ -177,7 +177,7 @@ fn c2i(x: u32, y: u32, width: usize) -> usize {
     (y as usize * width) + x as usize
 }
 
-impl FromStr for Forest {
+impl FromStr for Mountain {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -190,12 +190,15 @@ impl FromStr for Forest {
             }
         }
 
-        Ok(Forest { width, trees })
+        Ok(Mountain {
+            width,
+            columns: trees,
+        })
     }
 }
 
 fn part1(input: &str) -> String {
-    let forest = input.parse::<Forest>().unwrap();
+    let forest = input.parse::<Mountain>().unwrap();
     println!("{}", forest);
 
     // println!(
@@ -214,7 +217,7 @@ fn part1(input: &str) -> String {
 }
 
 fn part2(input: &str) -> String {
-    let forest = input.parse::<Forest>().unwrap();
+    let forest = input.parse::<Mountain>().unwrap();
     println!("{}", forest);
 
     // println!(
@@ -227,7 +230,7 @@ fn part2(input: &str) -> String {
 
     let end = forest.end();
 
-    let min = (0..forest.trees.len())
+    let min = (0..forest.columns.len())
         .into_iter()
         .filter(|i| forest[*i].h() == 0)
         .flat_map(|i| forest.route_len(i, end))
